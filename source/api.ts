@@ -37,205 +37,15 @@ export function getProxyUrl(): string {
 	return activeProxyUrl;
 }
 
-// Initial premium Mock Data matching the PRD and python dashboard
-export const MOCK_MATCHES: Match[] = [
-	{
-		id: 'mex-can-2026',
-		homeTeam: 'MEX',
-		awayTeam: 'CAN',
-		homeScore: 2,
-		awayScore: 1,
-		status: '2H',
-		elapsedTime: 67,
-		venue: 'Estadio Azteca',
-		city: 'Mexico City',
-	},
-	{
-		id: 'usa-ger-2026',
-		homeTeam: 'USA',
-		awayTeam: 'GER',
-		homeScore: 0,
-		awayScore: 0,
-		status: '1H',
-		elapsedTime: 34,
-		venue: 'MetLife Stadium',
-		city: 'East Rutherford',
-	},
-];
+// No hardcoded mock data — production mode only serves real FIFA data.
+export const MOCK_MATCHES: Match[] = [];
 
-export const MOCK_FIXTURES: Fixture[] = [
-	{
-		id: 'esp-mar-2026',
-		homeTeam: 'ESP',
-		awayTeam: 'MAR',
-		date: 'Tomorrow',
-		time: '18:00',
-		venue: 'Estadio Azteca',
-		city: 'Mexico City',
-		stage: 'Group Stage',
-	},
-	{
-		id: 'bra-fra-2026',
-		homeTeam: 'BRA',
-		awayTeam: 'FRA',
-		date: 'Jun 13',
-		time: '21:00',
-		venue: 'MetLife Stadium',
-		city: 'NY/NJ',
-		stage: 'Group Stage',
-	},
-];
+export const MOCK_FIXTURES: Fixture[] = [];
 
-export const MOCK_STANDINGS: Standing[] = [
-	{
-		group: 'Group A',
-		team: 'MEX',
-		played: 2,
-		won: 1,
-		drawn: 1,
-		lost: 0,
-		goalsFor: 3,
-		goalsAgainst: 2,
-		goalDifference: 1,
-		points: 4,
-	},
-	{
-		group: 'Group A',
-		team: 'CAN',
-		played: 2,
-		won: 1,
-		drawn: 0,
-		lost: 1,
-		goalsFor: 2,
-		goalsAgainst: 2,
-		goalDifference: 0,
-		points: 3,
-	},
-	{
-		group: 'Group A',
-		team: 'USA',
-		played: 2,
-		won: 0,
-		drawn: 1,
-		lost: 1,
-		goalsFor: 1,
-		goalsAgainst: 2,
-		goalDifference: -1,
-		points: 1,
-	},
-	{
-		group: 'Group A',
-		team: 'GER',
-		played: 2,
-		won: 0,
-		drawn: 1,
-		lost: 1,
-		goalsFor: 1,
-		goalsAgainst: 2,
-		goalDifference: -1,
-		points: 1,
-	},
+export const MOCK_STANDINGS: Standing[] = [];
 
-	{
-		group: 'Group B',
-		team: 'ESP',
-		played: 0,
-		won: 0,
-		drawn: 0,
-		lost: 0,
-		goalsFor: 0,
-		goalsAgainst: 0,
-		goalDifference: 0,
-		points: 0,
-	},
-	{
-		group: 'Group B',
-		team: 'MAR',
-		played: 0,
-		won: 0,
-		drawn: 0,
-		lost: 0,
-		goalsFor: 0,
-		goalsAgainst: 0,
-		goalDifference: 0,
-		points: 0,
-	},
-	{
-		group: 'Group B',
-		team: 'BRA',
-		played: 0,
-		won: 0,
-		drawn: 0,
-		lost: 0,
-		goalsFor: 0,
-		goalsAgainst: 0,
-		goalDifference: 0,
-		points: 0,
-	},
-	{
-		group: 'Group B',
-		team: 'FRA',
-		played: 0,
-		won: 0,
-		drawn: 0,
-		lost: 0,
-		goalsFor: 0,
-		goalsAgainst: 0,
-		goalDifference: 0,
-		points: 0,
-	},
-];
 
-const MOCK_EVENTS: Record<string, MatchEvent[]> = {
-	'mex-can-2026': [
-		{minute: 12, player: 'Santiago Giménez', team: 'MEX', eventType: 'GOAL'},
-		{minute: 45, player: 'Alphonso Davies', team: 'CAN', eventType: 'YELLOW'},
-		{minute: 58, player: 'Jonathan David', team: 'CAN', eventType: 'GOAL'},
-		{minute: 65, player: 'Hirving Lozano', team: 'MEX', eventType: 'GOAL'},
-	],
-	'usa-ger-2026': [
-		{minute: 22, player: 'Weston McKennie', team: 'USA', eventType: 'YELLOW'},
-	],
-};
 
-const MOCK_STATS: Record<string, MatchStats> = {
-	'mex-can-2026': {
-		possessionHome: 55,
-		possessionAway: 45,
-		shotsHome: 12,
-		shotsAway: 8,
-		shotsOnTargetHome: 6,
-		shotsOnTargetAway: 3,
-		cornersHome: 4,
-		cornersAway: 3,
-		foulsHome: 10,
-		foulsAway: 12,
-		offsidesHome: 1,
-		offsidesAway: 2,
-		yellowHome: 1,
-		yellowAway: 2,
-		redHome: 0,
-		redAway: 0,
-	},
-	'usa-ger-2026': {
-		possessionHome: 48,
-		possessionAway: 52,
-		shotsHome: 7,
-		shotsAway: 9,
-		shotsOnTargetHome: 2,
-		shotsOnTargetAway: 4,
-		cornersHome: 3,
-		cornersAway: 5,
-		foulsHome: 14,
-		foulsAway: 11,
-		offsidesHome: 3,
-		offsidesAway: 1,
-		yellowHome: 1,
-		yellowAway: 0,
-		redHome: 0,
-		redAway: 0,
-	},
-};
 
 // Helper: Make sure cache dir exists
 function ensureCacheDir() {
@@ -449,9 +259,7 @@ export async function getGroupStandings(): Promise<{
 export async function getMatchDetails(
 	id: string,
 ): Promise<{data: MatchEvent[]; fromCache: boolean}> {
-	if (id.includes('mock')) {
-		return {data: MOCK_EVENTS[id] || [], fromCache: true};
-	}
+
 
 	try {
 		const response = await axios.get(`${getProxyUrl()}/fixtures/events`, {
@@ -515,9 +323,7 @@ export async function getMatchDetails(
 export async function getMatchStats(
 	id: string,
 ): Promise<{data: MatchStats | undefined; fromCache: boolean}> {
-	if (id.includes('mock')) {
-		return {data: MOCK_STATS[id] || undefined, fromCache: true};
-	}
+
 
 	try {
 		const response = await axios.get(`${getProxyUrl()}/fixtures/statistics`, {
