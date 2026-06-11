@@ -5,3 +5,5 @@ poller.pid
 set_prompt.bat
 CONOUT$
 mock_server.js
+.env
+.cache/
