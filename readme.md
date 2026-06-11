@@ -82,14 +82,17 @@ npm run build
 node dist/cli.js --dry-run
 ```
 
-### **4. Start Local Mock Server**
-To test live data parsing and rate-limit triggers without connecting to a live API:
+### **4. Start Local Offline Cache & Mock Server**
+The project includes a pre-cached offline dataset containing real scheduled FIFA 2026 World Cup matches and standings. To avoid duplicate API requests, conserve your API quota, and ensure that the dashboard focuses exclusively on FIFA 2026:
 ```bash
-# Runs the zero-dependency native mock server on port 3000
+# Starts the proxy server in offline-cache mode on port 3000
 node mock_server.js
 ```
-* Visit `http://localhost:3000/v1/trigger-limit` in your browser to simulate an HTTP 429 rate limit.
-* Visit `http://localhost:3000/v1/reset-limit` to clear the simulated rate limit.
+* **Offline Caching:** The proxy reads directly from `fifa_2026_fixtures.json` and `fifa_2026_standings.json`, running 100% offline.
+* **Live Match Simulation:** It dynamically simulates real FIFA match play-by-play events, statistics, and live scoring for selected matchups (e.g. Mexico vs South Africa, Canada vs Bosnia, USA vs Paraguay).
+* **Rate Limit Testing:** 
+  * Visit `http://localhost:3000/v1/trigger-limit` in your browser to simulate an HTTP 429 rate limit.
+  * Visit `http://localhost:3000/v1/reset-limit` to clear the simulated rate limit.
 
 ### **5. Run TUI in Interactive Mode**
 ```bash
