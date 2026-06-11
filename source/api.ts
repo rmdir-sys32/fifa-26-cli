@@ -19,19 +19,23 @@ import {
 dotenv.config();
 
 const CACHE_DIRECTORY = path.join(os.homedir(), '.config', 'fifa-live-cli');
-let activeApiKey =
-	process.env['FIFA_API_KEY'] || process.env['RAPIDAPI_KEY'] || '';
 
-export function setApiKey(key: string) {
-	activeApiKey = key;
+export class RateLimitError extends Error {
+	constructor() {
+		super('Rate limit exceeded');
+		this.name = 'RateLimitError';
+	}
 }
 
-export function getApiKey(): string {
-	return activeApiKey;
+let activeProxyUrl = 'http://localhost:3000/v1';
+
+export function setProxyUrl(url: string) {
+	activeProxyUrl = url;
 }
 
-const RAPIDAPI_HOST = 'v3.football.api-sports.io';
-const API_BASE_URL = `https://${RAPIDAPI_HOST}`;
+export function getProxyUrl(): string {
+	return activeProxyUrl;
+}
 
 // Initial premium Mock Data matching the PRD and python dashboard
 export const MOCK_MATCHES: Match[] = [
