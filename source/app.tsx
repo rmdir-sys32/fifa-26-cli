@@ -513,7 +513,7 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 										</Text>
 										<Text color="cyan">
 											⏱️ {match.elapsedTime}' ({match.status})
-											{match.date ? ` | 📅 ${new Date(match.date).toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'})}` : ''}
+											{match.date ? ` | 📅 ${new Date(match.date).toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit', timeZoneName: 'short'})}` : ''}
 										</Text>
 										<Text dimColor>
 											📍 {match.venue}, {match.city}
