@@ -4,3 +4,4 @@ pinned_score.json
 poller.pid
 set_prompt.bat
 CONOUT$
+mock_server.js
