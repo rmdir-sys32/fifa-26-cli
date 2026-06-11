@@ -359,11 +359,11 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 		);
 	}
 
-	const dividerStr = '─'.repeat(Math.max(20, terminalWidth - 2));
+	const dividerStr = '─'.repeat(Math.max(20, terminalWidth - 4));
 	const halfWidth = Math.floor((terminalWidth - 4) / 2);
 
 	return (
-		<Box flexDirection="column" width={terminalWidth} paddingX={1} paddingY={0}>
+		<Box flexDirection="column" paddingX={1} paddingY={0}>
 			{process.stdin.isTTY && (
 				<KeyController
 					activeTab={activeTab}
@@ -540,9 +540,9 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 							const isSelected = idx === selectedFixtureIdx;
 							return (
 								<Box key={fixture.id} flexDirection="row" marginY={0}>
-									<Text color={isSelected ? 'cyan' : 'gray'} bold={isSelected}>
+									<Text wrap="truncate" color={isSelected ? 'cyan' : 'gray'} bold={isSelected}>
 										{isSelected ? '▶ ' : '  '}
-										{fixture.date.padEnd(8)} | {fixture.time} |{' '}
+										{fixture.date.padEnd(8)} | {fixture.time} (UTC {fixture.utcTime}) |{' '}
 										{fixture.homeTeam.padEnd(5)} vs {fixture.awayTeam.padEnd(5)}{' '}
 										| {fixture.stage.padEnd(14)} | {fixture.venue} (
 										{fixture.city})
@@ -568,44 +568,30 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 								GROUP A
 							</Text>
 						</Box>
-						<Box justifyContent="space-between">
-							<Text bold color="gray">
-								TEAM
-							</Text>
-							<Text bold color="gray">
-								P
-							</Text>
-							<Text bold color="gray">
-								W
-							</Text>
-							<Text bold color="gray">
-								D
-							</Text>
-							<Text bold color="gray">
-								L
-							</Text>
-							<Text bold color="gray">
-								GD
-							</Text>
-							<Text bold color="gray">
-								PTS
-							</Text>
+						<Box flexDirection="row">
+							<Box width={16}><Text bold color="gray">TEAM</Text></Box>
+							<Box width={3}><Text bold color="gray">P</Text></Box>
+							<Box width={3}><Text bold color="gray">W</Text></Box>
+							<Box width={3}><Text bold color="gray">D</Text></Box>
+							<Box width={3}><Text bold color="gray">L</Text></Box>
+							<Box width={4}><Text bold color="gray">GD</Text></Box>
+							<Box width={4}><Text bold color="gray">PTS</Text></Box>
 						</Box>
 						{appData.standings
 							.filter(s => s.group === 'Group A')
 							.map((team, idx) => (
-								<Box key={idx} justifyContent="space-between">
-									<Text bold color="white">
-										{team.team.padEnd(8)}
-									</Text>
-									<Text color="white">{team.played}</Text>
-									<Text color="white">{team.won}</Text>
-									<Text color="white">{team.drawn}</Text>
-									<Text color="white">{team.lost}</Text>
-									<Text color="white">{team.goalDifference}</Text>
-									<Text bold color="yellow">
-										{team.points}
-									</Text>
+								<Box key={idx} flexDirection="row">
+									<Box width={16}>
+										<Text bold color="white">
+											{team.team.substring(0, 15)}
+										</Text>
+									</Box>
+									<Box width={3}><Text color="white">{team.played}</Text></Box>
+									<Box width={3}><Text color="white">{team.won}</Text></Box>
+									<Box width={3}><Text color="white">{team.drawn}</Text></Box>
+									<Box width={3}><Text color="white">{team.lost}</Text></Box>
+									<Box width={4}><Text color="white">{team.goalDifference}</Text></Box>
+									<Box width={4}><Text bold color="yellow">{team.points}</Text></Box>
 								</Box>
 							))}
 					</Box>
@@ -621,44 +607,30 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 								GROUP B
 							</Text>
 						</Box>
-						<Box justifyContent="space-between">
-							<Text bold color="gray">
-								TEAM
-							</Text>
-							<Text bold color="gray">
-								P
-							</Text>
-							<Text bold color="gray">
-								W
-							</Text>
-							<Text bold color="gray">
-								D
-							</Text>
-							<Text bold color="gray">
-								L
-							</Text>
-							<Text bold color="gray">
-								GD
-							</Text>
-							<Text bold color="gray">
-								PTS
-							</Text>
+						<Box flexDirection="row">
+							<Box width={16}><Text bold color="gray">TEAM</Text></Box>
+							<Box width={3}><Text bold color="gray">P</Text></Box>
+							<Box width={3}><Text bold color="gray">W</Text></Box>
+							<Box width={3}><Text bold color="gray">D</Text></Box>
+							<Box width={3}><Text bold color="gray">L</Text></Box>
+							<Box width={4}><Text bold color="gray">GD</Text></Box>
+							<Box width={4}><Text bold color="gray">PTS</Text></Box>
 						</Box>
 						{appData.standings
 							.filter(s => s.group === 'Group B')
 							.map((team, idx) => (
-								<Box key={idx} justifyContent="space-between">
-									<Text bold color="white">
-										{team.team.padEnd(8)}
-									</Text>
-									<Text color="white">{team.played}</Text>
-									<Text color="white">{team.won}</Text>
-									<Text color="white">{team.drawn}</Text>
-									<Text color="white">{team.lost}</Text>
-									<Text color="white">{team.goalDifference}</Text>
-									<Text bold color="yellow">
-										{team.points}
-									</Text>
+								<Box key={idx} flexDirection="row">
+									<Box width={16}>
+										<Text bold color="white">
+											{team.team.substring(0, 15)}
+										</Text>
+									</Box>
+									<Box width={3}><Text color="white">{team.played}</Text></Box>
+									<Box width={3}><Text color="white">{team.won}</Text></Box>
+									<Box width={3}><Text color="white">{team.drawn}</Text></Box>
+									<Box width={3}><Text color="white">{team.lost}</Text></Box>
+									<Box width={4}><Text color="white">{team.goalDifference}</Text></Box>
+									<Box width={4}><Text bold color="yellow">{team.points}</Text></Box>
 								</Box>
 							))}
 					</Box>

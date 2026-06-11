@@ -167,6 +167,12 @@ export async function getUpcomingFixtures(): Promise<{
 						minute: '2-digit',
 						hour12: false,
 					}),
+					utcTime: new Date(item.fixture.date).toLocaleTimeString('en-GB', {
+						hour: '2-digit',
+						minute: '2-digit',
+						hour12: false,
+						timeZone: 'UTC',
+					}),
 					venue: item.fixture.venue.name || 'Stadium',
 					city: item.fixture.venue.city || 'City',
 					stage: item.league.round || 'Group Stage',
