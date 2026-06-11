@@ -109,6 +109,7 @@ export async function getLiveMatches(): Promise<{
 					elapsedTime: item.fixture.status.elapsed || 0,
 					venue: item.fixture.venue.name || 'Stadium',
 					city: item.fixture.venue.city || 'City',
+					date: item.fixture.date,
 				};
 				const validation = MatchSchema.safeParse(matchObject);
 				if (validation.success) {

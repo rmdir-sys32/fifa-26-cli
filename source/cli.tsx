@@ -41,7 +41,9 @@ if (fs.existsSync(pidPath)) {
 	try {
 		const pid = parseInt(fs.readFileSync(pidPath, 'utf-8'), 10);
 		if (!isNaN(pid)) {
-			process.kill(pid, 'SIGTERM');
+			try {
+				process.kill(pid, 'SIGKILL');
+			} catch {}
 		}
 	} catch {}
 	try {

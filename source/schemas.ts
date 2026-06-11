@@ -10,6 +10,7 @@ export const MatchSchema = z.object({
 	elapsedTime: z.number(),
 	venue: z.string(),
 	city: z.string(),
+	date: z.string().optional(),
 });
 
 export type Match = z.infer<typeof MatchSchema>;

@@ -177,6 +177,24 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 		fromCache: false,
 	});
 
+	// Keep pinned match in sync with live data polling
+	useEffect(() => {
+		if (pinnedMatch && appData.matches.length > 0) {
+			const updatedMatch = appData.matches.find(m => m.id === pinnedMatch.id);
+			if (updatedMatch) {
+				if (JSON.stringify(updatedMatch) !== JSON.stringify(pinnedMatch)) {
+					setPinnedMatch(updatedMatch);
+				}
+			} else if (!appData.fromCache) {
+				// If we are getting live API data but the pinned match isn't there, it's a stale mock match
+				setPinnedMatch(undefined);
+				try {
+					fs.unlinkSync(path.join(process.cwd(), 'pinned_score.json'));
+				} catch {}
+			}
+		}
+	}, [appData.matches, pinnedMatch]);
+
 	// Navigation index (for fixtures tab only)
 	const [selectedFixtureIdx, setSelectedFixtureIdx] = useState(0);
 
@@ -495,6 +513,7 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 										</Text>
 										<Text color="cyan">
 											⏱️ {match.elapsedTime}' ({match.status})
+											{match.date ? ` | 📅 ${new Date(match.date).toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'})}` : ''}
 										</Text>
 										<Text dimColor>
 											📍 {match.venue}, {match.city}
