@@ -19,12 +19,22 @@ import {
 dotenv.config();
 
 const CACHE_DIRECTORY = path.join(os.homedir(), '.config', 'fifa-live-cli');
-const RAPIDAPI_KEY = process.env['RAPIDAPI_KEY'] || '';
+let activeApiKey =
+	process.env['FIFA_API_KEY'] || process.env['RAPIDAPI_KEY'] || '';
+
+export function setApiKey(key: string) {
+	activeApiKey = key;
+}
+
+export function getApiKey(): string {
+	return activeApiKey;
+}
+
 const RAPIDAPI_HOST = 'v3.football.api-sports.io';
 const API_BASE_URL = `https://${RAPIDAPI_HOST}`;
 
 // Initial premium Mock Data matching the PRD and python dashboard
-const MOCK_MATCHES: Match[] = [
+export const MOCK_MATCHES: Match[] = [
 	{
 		id: 'mex-can-2026',
 		homeTeam: 'MEX',
@@ -49,7 +59,7 @@ const MOCK_MATCHES: Match[] = [
 	},
 ];
 
-const MOCK_FIXTURES: Fixture[] = [
+export const MOCK_FIXTURES: Fixture[] = [
 	{
 		id: 'esp-mar-2026',
 		homeTeam: 'ESP',
@@ -72,7 +82,7 @@ const MOCK_FIXTURES: Fixture[] = [
 	},
 ];
 
-const MOCK_STANDINGS: Standing[] = [
+export const MOCK_STANDINGS: Standing[] = [
 	{
 		group: 'Group A',
 		team: 'MEX',
@@ -262,7 +272,7 @@ export async function getLiveMatches(): Promise<{
 	data: Match[];
 	fromCache: boolean;
 }> {
-	if (!RAPIDAPI_KEY) {
+	if (!getApiKey()) {
 		return {
 			data: readFromCache('live_matches.json', MOCK_MATCHES),
 			fromCache: true,
@@ -272,7 +282,7 @@ export async function getLiveMatches(): Promise<{
 	try {
 		const response = await axios.get(`${API_BASE_URL}/fixtures`, {
 			headers: {
-				'x-rapidapi-key': RAPIDAPI_KEY,
+				'x-rapidapi-key': getApiKey(),
 				'x-rapidapi-host': RAPIDAPI_HOST,
 			},
 			params: {
@@ -325,7 +335,7 @@ export async function getUpcomingFixtures(): Promise<{
 	data: Fixture[];
 	fromCache: boolean;
 }> {
-	if (!RAPIDAPI_KEY) {
+	if (!getApiKey()) {
 		return {
 			data: readFromCache('upcoming_fixtures.json', MOCK_FIXTURES),
 			fromCache: true,
@@ -335,7 +345,7 @@ export async function getUpcomingFixtures(): Promise<{
 	try {
 		const response = await axios.get(`${API_BASE_URL}/fixtures`, {
 			headers: {
-				'x-rapidapi-key': RAPIDAPI_KEY,
+				'x-rapidapi-key': getApiKey(),
 				'x-rapidapi-host': RAPIDAPI_HOST,
 			},
 			params: {
@@ -394,7 +404,7 @@ export async function getGroupStandings(): Promise<{
 	data: Standing[];
 	fromCache: boolean;
 }> {
-	if (!RAPIDAPI_KEY) {
+	if (!getApiKey()) {
 		return {
 			data: readFromCache('group_standings.json', MOCK_STANDINGS),
 			fromCache: true,
@@ -404,7 +414,7 @@ export async function getGroupStandings(): Promise<{
 	try {
 		const response = await axios.get(`${API_BASE_URL}/standings`, {
 			headers: {
-				'x-rapidapi-key': RAPIDAPI_KEY,
+				'x-rapidapi-key': getApiKey(),
 				'x-rapidapi-host': RAPIDAPI_HOST,
 			},
 			params: {
@@ -459,14 +469,14 @@ export async function getGroupStandings(): Promise<{
 export async function getMatchDetails(
 	id: string,
 ): Promise<{data: MatchEvent[]; fromCache: boolean}> {
-	if (!RAPIDAPI_KEY || id.includes('mock')) {
+	if (!getApiKey() || id.includes('mock')) {
 		return {data: MOCK_EVENTS[id] || [], fromCache: true};
 	}
 
 	try {
 		const response = await axios.get(`${API_BASE_URL}/fixtures/events`, {
 			headers: {
-				'x-rapidapi-key': RAPIDAPI_KEY,
+				'x-rapidapi-key': getApiKey(),
 				'x-rapidapi-host': RAPIDAPI_HOST,
 			},
 			params: {
@@ -526,14 +536,14 @@ export async function getMatchDetails(
 export async function getMatchStats(
 	id: string,
 ): Promise<{data: MatchStats | undefined; fromCache: boolean}> {
-	if (!RAPIDAPI_KEY || id.includes('mock')) {
+	if (!getApiKey() || id.includes('mock')) {
 		return {data: MOCK_STATS[id] || undefined, fromCache: true};
 	}
 
 	try {
 		const response = await axios.get(`${API_BASE_URL}/fixtures/statistics`, {
 			headers: {
-				'x-rapidapi-key': RAPIDAPI_KEY,
+				'x-rapidapi-key': getApiKey(),
 				'x-rapidapi-host': RAPIDAPI_HOST,
 			},
 			params: {

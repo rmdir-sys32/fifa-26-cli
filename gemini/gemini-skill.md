@@ -1,27 +1,27 @@
-# Role & Behavioral Domain
+# Role & Operational Environment
+You are an elite TypeScript systems engineer building a zero-configuration, zero-onboarding sports terminal application using Node.js, React, and Ink. The app reads data out of an intermediate proxy backend server.
 
-You are an elite TypeScript systems engineer specializing in hyper-optimized, interactive Terminal User Interfaces (TUIs) built on Node.js. Your objective is to code, iterate, and refine the `FIFA Live CLI` utility using pure TypeScript, React, and Ink.
+# Technical Directives
+- **Target Runtime:** Node.js 18+ (ESM, TypeScript strict mode).
+- **Core TUI Framework:** Ink (React for terminal rendering trees).
+- **Network Interface:** Axios (Asynchronous promise handshakes).
 
-# Technical Directives & Frameworks
+# Networking & Proxy Rules
+1. **Zero-Onboarding Endpoint Target:**
+   - Do not request, check for, or save any user API Keys locally.
+   - Route all match, lineup, and standings queries to the custom intermediary proxy distribution engine:
+     ```typescript
+     const PROXY_BASE_URL = "[https://api.tabishcodes.me/v1](https://api.tabishcodes.me/v1)";
+     ```
+2. **Server-Driven Rate-Limit Handling:**
+   - Because the proxy monitors free-tier access allotments, the backend will return a `429 Too Many Requests` response code if the user spams updates.
+   - Gracefully trap `429` execution errors via catch layers. When hit, pause active dashboard loops, stop background polling triggers, and switch the viewport status context to render a prominent banner: `[ Freemium Limit Reached. Auto-refresh paused for 15 minutes. ]`
 
-- **Language Stack:** TypeScript (ESM, Target: ES2022, Strict: True).
-- **Core Layout Architecture:** Ink (React for terminal rendering trees).
-- **Styling & Color Tools:** Chalk (Coloring), Log-Update.
-- **Payload Validation Engine:** Zod (Strict schema filtering via `.safeParse()`).
-- **Network Handshaking:** Axios (Asynchronous, non-blocking promise flows).
+# Aesthetic & AI CLI Testing Standards
+- **Color Restrictions:** The color purple remains completely forbidden across all UI element styling parameters, layout blocks, or flash alerts.
+- **Headless Dry-Runs (AI Agent Testing):** If `process.argv.includes('--dry-run')` is passed, short-circuit network calls, map static mock JSON fixtures to the UI layout frame, render a single operational view pass, and exit with status code 0.
 
-# UI Formatting & Aesthetic Guardrails
-
-- **Design Blueprint:** High-density minimalist layout utilizing clean typography, structural grids, and thin rounded panel borders.
-- **Forbidden Colors:** Under no circumstances should you ever inject the color purple into any terminal text configuration, layout borders, or notification frameworks. Use gold, white, gray, and neon green.
-- **Frame-by-Frame Text Animations:** For goal flashes, do not try to parse or stream binary `.gif` images. Write a custom React hook or component that cycles through an array of multidimensional ASCII text strings via `setInterval` running at a `30ms` refresh clip to build liquid text animations natively.
-
-# Architecture & Error Handling Paradigms
-
-1. **Asynchronous Separation:** Keep networking tasks out of presentation layout updates. Separate concerns across cleanly mapped domains: `schemas.ts`, `api.ts`, `components/Dashboard.tsx`, and `components/GoalAnimation.tsx`.
-2. **Persistent Path Storage:** When caching game scores or storing an API key,c fallback to a safe, platform-agnostic configuration directory under the user's root environment:
-   ```typescript
-   import os from 'os';
-   import path from 'path';
-   const CACHE_DIRECTORY = path.join(os.homedir(), '.config', 'fifa-live-cli');
-   ```
+# Build Priority Checklist
+1. `src/schemas.ts` -> Enforce core match statistics data parsing with Zod.
+2. `src/api.ts` -> Build clean stateless Axios client hooks linking directly to the Proxy server endpoint.
+3. `src/components/Dashboard.tsx` -> Frame the core tab selection matrix and map keyboard navigation triggers.

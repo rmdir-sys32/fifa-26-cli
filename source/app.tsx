@@ -7,6 +7,10 @@ import {
 	getUpcomingFixtures,
 	getGroupStandings,
 	getMatchDetails,
+	setApiKey,
+	MOCK_MATCHES,
+	MOCK_FIXTURES,
+	MOCK_STANDINGS,
 } from './api.js';
 import {
 	type Match,
@@ -15,8 +19,110 @@ import {
 	type MatchEvent,
 } from './schemas.js';
 import GoalAnimation from './components/GoalAnimation.js';
+import Onboarding from './components/Onboarding.js';
+import {readConfig, writeConfig} from './storage.js';
 
-export default function App() {
+interface KeyControllerProps {
+	activeTab: 'dashboard' | 'fixtures' | 'standings';
+	setActiveTab: React.Dispatch<
+		React.SetStateAction<'dashboard' | 'fixtures' | 'standings'>
+	>;
+	appData: {
+		matches: Match[];
+		fixtures: Fixture[];
+		standings: Standing[];
+		matchEventsMap: Record<string, MatchEvent[]>;
+		fromCache: boolean;
+	};
+	setSelectedFixtureIdx: React.Dispatch<React.SetStateAction<number>>;
+	pinnedMatch: Match | undefined;
+	setPinnedMatch: React.Dispatch<React.SetStateAction<Match | undefined>>;
+	setShowGoalAnim: React.Dispatch<React.SetStateAction<boolean>>;
+	loadData: () => Promise<void>;
+	exit: () => void;
+}
+
+function KeyController({
+	activeTab,
+	setActiveTab,
+	appData,
+	setSelectedFixtureIdx,
+	pinnedMatch,
+	setPinnedMatch,
+	setShowGoalAnim,
+	loadData,
+	exit,
+}: KeyControllerProps) {
+	useInput((input, key) => {
+		// Tab switching
+		if (input === '1') setActiveTab('dashboard');
+		if (input === '2') setActiveTab('fixtures');
+		if (input === '3') setActiveTab('standings');
+
+		if (key.leftArrow) {
+			if (activeTab === 'fixtures') setActiveTab('dashboard');
+			else if (activeTab === 'standings') setActiveTab('fixtures');
+		}
+
+		if (key.rightArrow) {
+			if (activeTab === 'dashboard') setActiveTab('fixtures');
+			else if (activeTab === 'fixtures') setActiveTab('standings');
+		}
+
+		// Fixture navigation
+		if (activeTab === 'fixtures' && appData.fixtures.length > 0) {
+			if (key.upArrow) {
+				setSelectedFixtureIdx(prev =>
+					prev > 0 ? prev - 1 : appData.fixtures.length - 1,
+				);
+			}
+
+			if (key.downArrow) {
+				setSelectedFixtureIdx(prev =>
+					prev < appData.fixtures.length - 1 ? prev + 1 : 0,
+				);
+			}
+		}
+
+		// Pin score of first match
+		if (input === 'p' && appData.matches.length > 0) {
+			setPinnedMatch(appData.matches[0] || undefined);
+		}
+
+		if (input === 'u') {
+			setPinnedMatch(undefined);
+		}
+
+		if (input === 'g') {
+			setShowGoalAnim(true);
+		}
+
+		if (input === 'r') {
+			loadData();
+		}
+
+		// Exit
+		if (key.ctrl && input === 'c') {
+			if (pinnedMatch) {
+				try {
+					fs.writeFileSync(
+						path.join(process.cwd(), 'pinned_score.json'),
+						JSON.stringify(pinnedMatch),
+						'utf-8',
+					);
+				} catch {
+					// Safe fail
+				}
+			}
+
+			exit();
+		}
+	});
+
+	return null;
+}
+
+export default function App({dryRun = false}: {dryRun?: boolean}) {
 	const {exit} = useApp();
 
 	const [terminalWidth, setTerminalWidth] = useState(
@@ -71,6 +177,7 @@ export default function App() {
 
 	// Status flags
 	const [showGoalAnim, setShowGoalAnim] = useState(false);
+	const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
 
 	// Load all data including events for all live matches
 	const loadData = async () => {
@@ -111,14 +218,79 @@ export default function App() {
 		}
 	};
 
-	// Initial load
+	// Onboarding Check & Initial configuration load
 	useEffect(() => {
-		loadData();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+		let timer: NodeJS.Timeout;
+		const init = async () => {
+			if (dryRun) {
+				setAppData({
+					matches: MOCK_MATCHES,
+					fixtures: MOCK_FIXTURES,
+					standings: MOCK_STANDINGS,
+					matchEventsMap: {
+						'mex-can-2026': [
+							{
+								minute: 12,
+								player: 'Santiago Giménez',
+								team: 'MEX',
+								eventType: 'GOAL',
+							},
+							{
+								minute: 58,
+								player: 'Jonathan David',
+								team: 'CAN',
+								eventType: 'GOAL',
+							},
+							{
+								minute: 65,
+								player: 'Hirving Lozano',
+								team: 'MEX',
+								eventType: 'GOAL',
+							},
+						],
+					},
+					fromCache: true,
+				});
+				setIsOnboarded(true);
+				timer = setTimeout(() => {
+					exit();
+				}, 100);
+				return;
+			}
 
-	// Refresh polling (30s)
+			// 1. Check process environment variables
+			const envKey = process.env['FIFA_API_KEY'] || process.env['RAPIDAPI_KEY'];
+			if (envKey) {
+				setApiKey(envKey);
+				setIsOnboarded(true);
+				return;
+			}
+
+			// 2. Check local config file
+			const config = await readConfig();
+			if (config.API_KEY) {
+				setApiKey(config.API_KEY);
+				setIsOnboarded(true);
+			} else {
+				setIsOnboarded(false);
+			}
+		};
+		init();
+
+		return () => {
+			if (timer) {
+				clearTimeout(timer);
+			}
+		};
+	}, [dryRun]);
+
+	// Polling and data loading trigger when onboarded
 	useEffect(() => {
+		if (isOnboarded !== true || dryRun) {
+			return;
+		}
+
+		loadData();
 		const interval = setInterval(async () => {
 			try {
 				const matchRes = await getLiveMatches();
@@ -147,75 +319,25 @@ export default function App() {
 		return () => {
 			clearInterval(interval);
 		};
-	}, []);
+	}, [isOnboarded, dryRun]);
 
-	// Keyboard controls
-	useInput((input, key) => {
-		// Tab switching
-		if (input === '1') setActiveTab('dashboard');
-		if (input === '2') setActiveTab('fixtures');
-		if (input === '3') setActiveTab('standings');
+	if (isOnboarded === null) {
+		return (
+			<Box padding={1}>
+				<Text color="yellow">⏳ Loading configuration...</Text>
+			</Box>
+		);
+	}
 
-		if (key.leftArrow) {
-			if (activeTab === 'fixtures') setActiveTab('dashboard');
-			else if (activeTab === 'standings') setActiveTab('fixtures');
-		}
+	if (isOnboarded === false) {
+		const handleSuccess = async (apiKey: string) => {
+			await writeConfig({API_KEY: apiKey});
+			setApiKey(apiKey);
+			setIsOnboarded(true);
+		};
 
-		if (key.rightArrow) {
-			if (activeTab === 'dashboard') setActiveTab('fixtures');
-			else if (activeTab === 'fixtures') setActiveTab('standings');
-		}
-
-		// Fixture navigation
-		if (activeTab === 'fixtures' && appData.fixtures.length > 0) {
-			if (key.upArrow) {
-				setSelectedFixtureIdx(prev =>
-					prev > 0 ? prev - 1 : appData.fixtures.length - 1,
-				);
-			}
-
-			if (key.downArrow) {
-				setSelectedFixtureIdx(prev =>
-					prev < appData.fixtures.length - 1 ? prev + 1 : 0,
-				);
-			}
-		}
-
-		// Pin score of first match
-		if (input === 'p' && appData.matches.length > 0) {
-			setPinnedMatch(appData.matches[0] || undefined);
-		}
-
-		if (input === 'u') {
-			setPinnedMatch(undefined);
-		}
-
-		if (input === 'g') {
-			setShowGoalAnim(true);
-		}
-
-		if (input === 'r') {
-			loadData();
-		}
-
-		// Exit
-		if (key.ctrl && input === 'c') {
-			// Write pinned score to a file so cli.tsx can print it after exiting alt screen
-			if (pinnedMatch) {
-				try {
-					fs.writeFileSync(
-						path.join(process.cwd(), 'pinned_score.json'),
-						JSON.stringify(pinnedMatch),
-						'utf-8',
-					);
-				} catch {
-					// Safe fail
-				}
-			}
-
-			exit();
-		}
-	});
+		return <Onboarding onSuccess={handleSuccess} />;
+	}
 
 	if (showGoalAnim) {
 		return (
@@ -232,6 +354,19 @@ export default function App() {
 
 	return (
 		<Box flexDirection="column" width={terminalWidth} paddingX={1} paddingY={0}>
+			{process.stdin.isTTY && (
+				<KeyController
+					activeTab={activeTab}
+					setActiveTab={setActiveTab}
+					appData={appData}
+					setSelectedFixtureIdx={setSelectedFixtureIdx}
+					pinnedMatch={pinnedMatch}
+					setPinnedMatch={setPinnedMatch}
+					setShowGoalAnim={setShowGoalAnim}
+					loadData={loadData}
+					exit={exit}
+				/>
+			)}
 			{/* SINGLE-LINE HEADER */}
 			<Box justifyContent="space-between" paddingX={1}>
 				<Box>

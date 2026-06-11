@@ -146,3 +146,51 @@ When instructed to program components, follow this order:
 ```
 
 ```
+# Product Requirements Document: FIFA Live CLI (Zero-Config Edition)
+
+## 1. Product Overview & Installation Blueprint
+FIFA Live CLI is a self-contained, interactive terminal dashboard for the FIFA World Cup 2026. It requires zero manual system installation, environment variables, or file configuration from the user. 
+
+### Execution Pathways
+1.  **Global Direct:** `npm install -g fifa-live-cli` followed by typing `fifa-live`
+2.  **Volatile One-Shot:** `npx fifa-live-cli`
+
+## 2. Dynamic Initialization Lifecycle
+To preserve a premium user experience without requiring an installation manual, the application manages its own data dependencies at runtime.
+
++-----------------------------------------------------------------------+
+|                         User runs `npx fifa-live-cli`                 |
++-----------------------------------------------------------------------+
+                                    |
+                                    v
+            +-----------------------------------------------+
+            |  Check: System Env or Local config.json?     |
+            +-----------------------------------------------+
+                     /                             \
+        (Key Missing) /                               \ (Key Exists)
+                   v                                   v
++---------------------------------------+   +-----------------------------------+
+|       Mount: OnboardingScreen         |   |    Bypass Setup: Load Cache       |
+|  - Renders Input Form via Ink         |   +-----------------------------------+
+|  - Captures API-Football Token        |                     |
++---------------------------------------+                     |
+                    |                                         |
+                    v                                         |
++---------------------------------------+                     |
+|     Verify: Live API Handshake        |                     |
+|  - Success: Save key to config.json   |                     |
+|  - Failure: Flash inline validation   |                     |
++---------------------------------------+                     |
+                    |                                         |
+                    +--------------------+--------------------+
+                                         |
+                                         v
+                    +-----------------------------------+
+                    |   Mount: Main Dashboard (Ink UI)   |
+                    +-----------------------------------+
+
+## 3. Storage & Environment Paradigms
+- **Config File Location:**
+  - Mac/Linux: `~/.config/fifa-live-cli/config.json`
+  - Windows: `%APPDATA%\fifa-live-cli\config.json`
+- **Data Payload:** Minimally structured JSON storing `{"API_KEY": "string"}`.

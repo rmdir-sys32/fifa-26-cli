@@ -22,7 +22,19 @@ meow(
 	},
 );
 
+const dryRun = process.argv.includes('--dry-run');
 const pidPath = path.join(process.cwd(), 'poller.pid');
+
+if (dryRun) {
+	// Headless Dry-Run (AI Agent testing)
+	// Render single pass of mock matches to layout tree and exit cleanly
+	const {waitUntilExit} = render(<App dryRun={true} />, {
+		patchConsole: false,
+		exitOnCtrlC: true,
+	});
+	await waitUntilExit();
+	process.exit(0);
+}
 
 // Clear any running background poller before opening the TUI
 if (fs.existsSync(pidPath)) {
@@ -49,7 +61,7 @@ process.on('SIGINT', () => {
 	process.exit(0);
 });
 
-const {waitUntilExit} = render(<App />, {
+const {waitUntilExit} = render(<App dryRun={false} />, {
 	patchConsole: false,
 	exitOnCtrlC: false, // We handle Ctrl+C ourselves via useInput in app.tsx
 });
