@@ -38,8 +38,8 @@ The system relies on a decoupled, config-driven gateway architecture that separa
 └──────────────────────────────────────┘
 ```
 
-### **1. Gateway & Key Security**
-To prevent public key leaks and API quota exhaustion, the CLI client delegates authentication to an intermediary proxy. The proxy securely holds the upstream API credentials, caches live match states, and protects data delivery.
+### **1. Gateway & 1-Minute Cache Buffer**
+To prevent public key leaks and API quota exhaustion, the CLI client delegates authentication to an intermediary proxy. The proxy securely holds the upstream API credentials, protects data delivery, and implements a **strict 1-minute file-based cache**. Even if multiple CLI clients poll the proxy aggressively, the external API is only hit once every 60 seconds, serving instant responses from the `.cache/` directory in between.
 
 ### **2. Config-Driven Endpoints**
 The application reads its target backend URL from a platform-agnostic configuration file:
@@ -56,7 +56,8 @@ When the proxy server detects excessive client requests, it responds with an `HT
 ## 🚀 Key Features
 
 * **Multi-Tab Dashboard:** Seamless navigation between **Live Scores**, **Upcoming Fixtures**, and **Group Standings** tabs.
-* **Live Score Pinning:** Pressing `P` pins the selected match. Once pinned and closed, a background helper script keeps updating your command prompt shell and window title with the live score in real time.
+* **Smart Timezones:** Match times are automatically localized to your system timezone with clear abbreviations (e.g., IST, EST, GMT).
+* **Live Score Pinning & Polling:** Pressing `P` pins the selected match. Once pinned and closed, a background helper script safely updates your window title. The CLI cleanly terminates orphan background pollers on Windows via `SIGKILL`.
 * **Goal Animation:** Renders frame-by-frame ASCII art animations at 30 FPS inside the terminal whenever a goal event is captured (or on-demand by pressing `G`).
 * **Automated AI Testing:** Accepts a `--dry-run` flag that short-circuits network calls, displays a single render pass utilizing mock fixtures, and exits with code `0`. Ideal for CI/CD and AI agent verification.
 * **Forbidden Purple Policy:** The UI strictly avoids the color purple, featuring a sleek cyberpunk layout styled exclusively with gold, white, neon green, and grey.
@@ -97,6 +98,31 @@ node mock_server.js
 ### **5. Run TUI in Interactive Mode**
 ```bash
 npm start
+```
+
+---
+
+## 🐳 Docker Deployment (Proxy Server)
+
+You can easily containerize the proxy server to host it in production and provide the API to your end-users.
+
+```bash
+# Build the Docker image
+docker build -t fifa-26-proxy .
+
+# Run the container (Exposes port 3000)
+docker run -p 3000:3000 -d fifa-26-proxy
+```
+
+---
+
+## 📦 NPM Publishing
+
+The application is structured to be published as a globally executable CLI tool. See the full [NPM Publish Guide](docs/npm-publish-guide.md) for details.
+
+End users can quickly run your app without installing by executing:
+```bash
+npx fifa-26-live-cli
 ```
 
 ---
