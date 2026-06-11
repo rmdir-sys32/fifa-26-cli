@@ -1,0 +1,6 @@
+node_modules
+dist
+pinned_score.json
+poller.pid
+set_prompt.bat
+CONOUT$
