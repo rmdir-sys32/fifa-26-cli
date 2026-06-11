@@ -223,7 +223,7 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 		} catch (err) {
 			if (err instanceof RateLimitError) {
 				setRateLimited(true);
-				setRateLimitCountdown(900); // 15 minutes
+				setRateLimitCountdown(420); // 7 minutes
 			} else {
 				setAppData(prev => ({...prev, fromCache: true}));
 			}
@@ -331,7 +331,7 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 			} catch (err) {
 				if (err instanceof RateLimitError) {
 					setRateLimited(true);
-					setRateLimitCountdown(900);
+					setRateLimitCountdown(420);
 				}
 			}
 		}, 30_000);
@@ -421,7 +421,7 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 					justifyContent="center"
 				>
 					<Text bold color="yellow">
-						⚠️ [ Freemium Limit Reached. Auto-refresh paused for 15 minutes. (
+						⚠️ [ Freemium Limit Reached. Auto-refresh paused for 7 minutes. (
 						{Math.floor(rateLimitCountdown / 60)}:
 						{(rateLimitCountdown % 60).toString().padStart(2, '0')} remaining) ]
 					</Text>
