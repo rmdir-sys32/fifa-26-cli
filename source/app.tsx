@@ -7,7 +7,8 @@ import {
 	getUpcomingFixtures,
 	getGroupStandings,
 	getMatchDetails,
-	setApiKey,
+	setProxyUrl,
+	RateLimitError,
 	MOCK_MATCHES,
 	MOCK_FIXTURES,
 	MOCK_STANDINGS,
@@ -19,8 +20,7 @@ import {
 	type MatchEvent,
 } from './schemas.js';
 import GoalAnimation from './components/GoalAnimation.js';
-import Onboarding from './components/Onboarding.js';
-import {readConfig, writeConfig} from './storage.js';
+import {readConfig} from './storage.js';
 
 interface KeyControllerProps {
 	activeTab: 'dashboard' | 'fixtures' | 'standings';
@@ -39,6 +39,8 @@ interface KeyControllerProps {
 	setPinnedMatch: React.Dispatch<React.SetStateAction<Match | undefined>>;
 	setShowGoalAnim: React.Dispatch<React.SetStateAction<boolean>>;
 	loadData: () => Promise<void>;
+	setRateLimited: React.Dispatch<React.SetStateAction<boolean>>;
+	setRateLimitCountdown: React.Dispatch<React.SetStateAction<number>>;
 	exit: () => void;
 }
 
@@ -51,6 +53,8 @@ function KeyController({
 	setPinnedMatch,
 	setShowGoalAnim,
 	loadData,
+	setRateLimited,
+	setRateLimitCountdown,
 	exit,
 }: KeyControllerProps) {
 	useInput((input, key) => {
@@ -98,6 +102,8 @@ function KeyController({
 		}
 
 		if (input === 'r') {
+			setRateLimited(false);
+			setRateLimitCountdown(0);
 			loadData();
 		}
 
@@ -156,12 +162,11 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 		return undefined;
 	});
 
-	// Unified data state — single setState prevents multiple re-renders
+	// Unified data state
 	const [appData, setAppData] = useState<{
 		matches: Match[];
 		fixtures: Fixture[];
 		standings: Standing[];
-		// Map of match id -> events for inline goals on dashboard
 		matchEventsMap: Record<string, MatchEvent[]>;
 		fromCache: boolean;
 	}>({
@@ -177,7 +182,9 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 
 	// Status flags
 	const [showGoalAnim, setShowGoalAnim] = useState(false);
-	const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
+	const [initialized, setInitialized] = useState(false);
+	const [rateLimited, setRateLimited] = useState(false);
+	const [rateLimitCountdown, setRateLimitCountdown] = useState(0);
 
 	// Load all data including events for all live matches
 	const loadData = async () => {
@@ -213,12 +220,17 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 			if (selectedFixtureIdx >= fixtureRes.data.length) {
 				setSelectedFixtureIdx(0);
 			}
-		} catch {
-			setAppData(prev => ({...prev, fromCache: true}));
+		} catch (err) {
+			if (err instanceof RateLimitError) {
+				setRateLimited(true);
+				setRateLimitCountdown(900); // 15 minutes
+			} else {
+				setAppData(prev => ({...prev, fromCache: true}));
+			}
 		}
 	};
 
-	// Onboarding Check & Initial configuration load
+	// Configuration load
 	useEffect(() => {
 		let timer: NodeJS.Timeout;
 		const init = async () => {
@@ -251,29 +263,18 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 					},
 					fromCache: true,
 				});
-				setIsOnboarded(true);
+				setInitialized(true);
 				timer = setTimeout(() => {
 					exit();
 				}, 100);
 				return;
 			}
 
-			// 1. Check process environment variables
-			const envKey = process.env['FIFA_API_KEY'] || process.env['RAPIDAPI_KEY'];
-			if (envKey) {
-				setApiKey(envKey);
-				setIsOnboarded(true);
-				return;
-			}
-
-			// 2. Check local config file
 			const config = await readConfig();
-			if (config.API_KEY) {
-				setApiKey(config.API_KEY);
-				setIsOnboarded(true);
-			} else {
-				setIsOnboarded(false);
+			if (config.PROXY_BASE_URL) {
+				setProxyUrl(config.PROXY_BASE_URL);
 			}
+			setInitialized(true);
 		};
 		init();
 
@@ -284,9 +285,25 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 		};
 	}, [dryRun]);
 
-	// Polling and data loading trigger when onboarded
+	// Rate limit countdown decrement
 	useEffect(() => {
-		if (isOnboarded !== true || dryRun) {
+		if (!rateLimited || rateLimitCountdown <= 0) {
+			if (rateLimited && rateLimitCountdown <= 0) {
+				setRateLimited(false);
+			}
+			return;
+		}
+
+		const timer = setTimeout(() => {
+			setRateLimitCountdown(prev => prev - 1);
+		}, 1000);
+
+		return () => clearTimeout(timer);
+	}, [rateLimited, rateLimitCountdown]);
+
+	// Polling and data loading trigger
+	useEffect(() => {
+		if (!initialized || dryRun || rateLimited) {
 			return;
 		}
 
@@ -311,32 +328,25 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 					matches: matchRes.data,
 					matchEventsMap,
 				}));
-			} catch {
-				// Safe fail
+			} catch (err) {
+				if (err instanceof RateLimitError) {
+					setRateLimited(true);
+					setRateLimitCountdown(900);
+				}
 			}
 		}, 30_000);
 
 		return () => {
 			clearInterval(interval);
 		};
-	}, [isOnboarded, dryRun]);
+	}, [initialized, dryRun, rateLimited]);
 
-	if (isOnboarded === null) {
+	if (!initialized) {
 		return (
 			<Box padding={1}>
 				<Text color="yellow">⏳ Loading configuration...</Text>
 			</Box>
 		);
-	}
-
-	if (isOnboarded === false) {
-		const handleSuccess = async (apiKey: string) => {
-			await writeConfig({API_KEY: apiKey});
-			setApiKey(apiKey);
-			setIsOnboarded(true);
-		};
-
-		return <Onboarding onSuccess={handleSuccess} />;
 	}
 
 	if (showGoalAnim) {
@@ -364,6 +374,8 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 					setPinnedMatch={setPinnedMatch}
 					setShowGoalAnim={setShowGoalAnim}
 					loadData={loadData}
+					setRateLimited={setRateLimited}
+					setRateLimitCountdown={setRateLimitCountdown}
 					exit={exit}
 				/>
 			)}
@@ -380,7 +392,11 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 					</Text>
 					<Text color="gray">
 						{'  | Mode: '}
-						<Text color="green">Polling</Text>
+						{rateLimited ? (
+							<Text color="red">Paused (Rate Limited)</Text>
+						) : (
+							<Text color="green">Polling</Text>
+						)}
 						{' | '}
 						{appData.fromCache ? (
 							<Text color="red">⚠️ Cached</Text>
@@ -394,6 +410,23 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 				</Text>
 			</Box>
 			<Text color="gray">{dividerStr}</Text>
+
+			{/* RATE LIMIT BANNER */}
+			{rateLimited && (
+				<Box
+					borderStyle="single"
+					borderColor="yellow"
+					paddingX={1}
+					marginY={0}
+					justifyContent="center"
+				>
+					<Text bold color="yellow">
+						⚠️ [ Freemium Limit Reached. Auto-refresh paused for 15 minutes. (
+						{Math.floor(rateLimitCountdown / 60)}:
+						{(rateLimitCountdown % 60).toString().padStart(2, '0')} remaining) ]
+					</Text>
+				</Box>
+			)}
 
 			{/* PINNED SCORE */}
 			{pinnedMatch && (
@@ -450,27 +483,26 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 									flexDirection="row"
 									justifyContent="space-between"
 									paddingX={1}
-									marginY={0.5}
+									marginY={0}
 								>
-									{/* LEFT: match info */}
-									<Box flexDirection="column" width={`${halfWidth}`}>
-										<Text bold color="cyan">
+									<Box flexDirection="column" width={halfWidth}>
+										<Text bold color="white">
 											MATCH CENTRE
 										</Text>
 										<Text bold color="white">
 											{match.homeTeam} {match.homeScore} - {match.awayScore}{' '}
 											{match.awayTeam}
 										</Text>
-										<Text color="gray">
+										<Text color="cyan">
 											⏱️ {match.elapsedTime}' ({match.status})
 										</Text>
-										<Text color="gray">
+										<Text dimColor>
 											📍 {match.venue}, {match.city}
 										</Text>
 									</Box>
-									{/* RIGHT: goals */}
-									<Box flexDirection="column" width={`${halfWidth}`}>
-										<Text bold underline color="yellow">
+
+									<Box flexDirection="column" width={halfWidth}>
+										<Text bold color="white">
 											GOALS & SCORERS
 										</Text>
 										{goals.length === 0 ? (
@@ -478,11 +510,9 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 												No goals yet
 											</Text>
 										) : (
-											goals.map((ev, i) => (
-												<Text key={i} color="white">
-													⚽ {ev.minute}' - {ev.player} ({ev.team})
-													{ev.eventType === 'OWN_GOAL' ? ' (OG)' : ''}
-													{ev.eventType === 'PENALTY' ? ' (PEN)' : ''}
+											goals.map((g, i) => (
+												<Text key={i} color="green">
+													⚽ {g.minute}' - {g.player} ({g.team})
 												</Text>
 											))
 										)}
@@ -491,8 +521,9 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 							);
 						})
 					)}
-					<Box justifyContent="center">
-						<Text color="yellow">🎥 G: Goal Anim | P: Pin Score</Text>
+					{/* GOAL ANIMATION HELPER TOOLTIP */}
+					<Box justifyContent="center" marginY={0}>
+						<Text dimColor>🎥 G: Goal Anim | P: Pin Score</Text>
 					</Box>
 				</Box>
 			)}
@@ -500,9 +531,6 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 			{/* TAB 2: UPCOMING FIXTURES */}
 			{activeTab === 'fixtures' && (
 				<Box flexDirection="column" paddingX={1}>
-					<Text bold color="cyan">
-						UPCOMING FIXTURES
-					</Text>
 					{appData.fixtures.length === 0 ? (
 						<Text italic color="gray">
 							No upcoming fixtures
@@ -511,31 +539,14 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 						appData.fixtures.map((fixture, idx) => {
 							const isSelected = idx === selectedFixtureIdx;
 							return (
-								<Box
-									key={fixture.id}
-									flexDirection="row"
-									justifyContent="space-between"
-									marginY={0.5}
-								>
-									<Box flexDirection="row">
-										<Text
-											bold={isSelected}
-											color={isSelected ? 'cyan' : 'white'}
-										>
-											{isSelected ? '▶ ' : '  '}
-											{fixture.homeTeam} vs {fixture.awayTeam}
-										</Text>
-									</Box>
-									<Box flexDirection="row">
-										<Text color="gray">
-											📅 {fixture.date} @ {fixture.time}
-											{'   '}
-										</Text>
-										<Text color="cyan">{fixture.stage}</Text>
-										<Text color="gray">
-											{'   '}📍 {fixture.venue}
-										</Text>
-									</Box>
+								<Box key={fixture.id} flexDirection="row" marginY={0}>
+									<Text color={isSelected ? 'cyan' : 'gray'} bold={isSelected}>
+										{isSelected ? '▶ ' : '  '}
+										{fixture.date.padEnd(8)} | {fixture.time} |{' '}
+										{fixture.homeTeam.padEnd(5)} vs {fixture.awayTeam.padEnd(5)}{' '}
+										| {fixture.stage.padEnd(14)} | {fixture.venue} (
+										{fixture.city})
+									</Text>
 								</Box>
 							);
 						})
@@ -543,23 +554,41 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 				</Box>
 			)}
 
-			{/* TAB 3: GROUP STANDINGS — SIDE BY SIDE */}
+			{/* TAB 3: GROUP STANDINGS */}
 			{activeTab === 'standings' && (
 				<Box flexDirection="row" justifyContent="space-between" paddingX={1}>
 					{/* Group A */}
-					<Box flexDirection="column" width="48%">
-						<Text bold underline color="yellow">
-							GROUP A
-						</Text>
+					<Box flexDirection="column" width={halfWidth}>
+						<Box
+							borderStyle="single"
+							borderColor="cyan"
+							justifyContent="center"
+						>
+							<Text bold color="cyan">
+								GROUP A
+							</Text>
+						</Box>
 						<Box justifyContent="space-between">
-							<Text color="gray">{'TEAM'.padEnd(8)}</Text>
-							<Text color="gray">{'P'}</Text>
-							<Text color="gray">{'W'}</Text>
-							<Text color="gray">{'D'}</Text>
-							<Text color="gray">{'L'}</Text>
-							<Text color="gray">{'GD'}</Text>
 							<Text bold color="gray">
-								{'PTS'}
+								TEAM
+							</Text>
+							<Text bold color="gray">
+								P
+							</Text>
+							<Text bold color="gray">
+								W
+							</Text>
+							<Text bold color="gray">
+								D
+							</Text>
+							<Text bold color="gray">
+								L
+							</Text>
+							<Text bold color="gray">
+								GD
+							</Text>
+							<Text bold color="gray">
+								PTS
 							</Text>
 						</Box>
 						{appData.standings
@@ -582,19 +611,37 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 					</Box>
 
 					{/* Group B */}
-					<Box flexDirection="column" width="48%">
-						<Text bold underline color="yellow">
-							GROUP B
-						</Text>
+					<Box flexDirection="column" width={halfWidth}>
+						<Box
+							borderStyle="single"
+							borderColor="yellow"
+							justifyContent="center"
+						>
+							<Text bold color="yellow">
+								GROUP B
+							</Text>
+						</Box>
 						<Box justifyContent="space-between">
-							<Text color="gray">{'TEAM'.padEnd(8)}</Text>
-							<Text color="gray">{'P'}</Text>
-							<Text color="gray">{'W'}</Text>
-							<Text color="gray">{'D'}</Text>
-							<Text color="gray">{'L'}</Text>
-							<Text color="gray">{'GD'}</Text>
 							<Text bold color="gray">
-								{'PTS'}
+								TEAM
+							</Text>
+							<Text bold color="gray">
+								P
+							</Text>
+							<Text bold color="gray">
+								W
+							</Text>
+							<Text bold color="gray">
+								D
+							</Text>
+							<Text bold color="gray">
+								L
+							</Text>
+							<Text bold color="gray">
+								GD
+							</Text>
+							<Text bold color="gray">
+								PTS
 							</Text>
 						</Box>
 						{appData.standings
@@ -625,7 +672,7 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 					🌐 https://www.fifa.com
 				</Text>
 				<Text color="gray">
-					Tab: 1-3 | ↑↓ Fixtures | P Pin | G Anim | Ctrl+C Quit
+					Tab: 1-3 | ↑↓ Fixtures | P Pin | G Anim | R Refresh | Ctrl+C Quit
 				</Text>
 			</Box>
 		</Box>

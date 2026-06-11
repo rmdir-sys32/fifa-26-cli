@@ -276,19 +276,8 @@ export async function getLiveMatches(): Promise<{
 	data: Match[];
 	fromCache: boolean;
 }> {
-	if (!getApiKey()) {
-		return {
-			data: readFromCache('live_matches.json', MOCK_MATCHES),
-			fromCache: true,
-		};
-	}
-
 	try {
-		const response = await axios.get(`${API_BASE_URL}/fixtures`, {
-			headers: {
-				'x-rapidapi-key': getApiKey(),
-				'x-rapidapi-host': RAPIDAPI_HOST,
-			},
+		const response = await axios.get(`${getProxyUrl()}/fixtures`, {
 			params: {
 				live: 'all',
 				league: '1', // World Cup league ID or similar
@@ -327,7 +316,10 @@ export async function getLiveMatches(): Promise<{
 			data: readFromCache('live_matches.json', MOCK_MATCHES),
 			fromCache: true,
 		};
-	} catch {
+	} catch (error: any) {
+		if (error?.response?.status === 429) {
+			throw new RateLimitError();
+		}
 		return {
 			data: readFromCache('live_matches.json', MOCK_MATCHES),
 			fromCache: true,
@@ -339,19 +331,8 @@ export async function getUpcomingFixtures(): Promise<{
 	data: Fixture[];
 	fromCache: boolean;
 }> {
-	if (!getApiKey()) {
-		return {
-			data: readFromCache('upcoming_fixtures.json', MOCK_FIXTURES),
-			fromCache: true,
-		};
-	}
-
 	try {
-		const response = await axios.get(`${API_BASE_URL}/fixtures`, {
-			headers: {
-				'x-rapidapi-key': getApiKey(),
-				'x-rapidapi-host': RAPIDAPI_HOST,
-			},
+		const response = await axios.get(`${getProxyUrl()}/fixtures`, {
 			params: {
 				league: '1',
 				season: '2026',
@@ -396,7 +377,10 @@ export async function getUpcomingFixtures(): Promise<{
 			data: readFromCache('upcoming_fixtures.json', MOCK_FIXTURES),
 			fromCache: true,
 		};
-	} catch {
+	} catch (error: any) {
+		if (error?.response?.status === 429) {
+			throw new RateLimitError();
+		}
 		return {
 			data: readFromCache('upcoming_fixtures.json', MOCK_FIXTURES),
 			fromCache: true,
@@ -408,19 +392,8 @@ export async function getGroupStandings(): Promise<{
 	data: Standing[];
 	fromCache: boolean;
 }> {
-	if (!getApiKey()) {
-		return {
-			data: readFromCache('group_standings.json', MOCK_STANDINGS),
-			fromCache: true,
-		};
-	}
-
 	try {
-		const response = await axios.get(`${API_BASE_URL}/standings`, {
-			headers: {
-				'x-rapidapi-key': getApiKey(),
-				'x-rapidapi-host': RAPIDAPI_HOST,
-			},
+		const response = await axios.get(`${getProxyUrl()}/standings`, {
 			params: {
 				league: '1',
 				season: '2026',
@@ -462,7 +435,10 @@ export async function getGroupStandings(): Promise<{
 			data: readFromCache('group_standings.json', MOCK_STANDINGS),
 			fromCache: true,
 		};
-	} catch {
+	} catch (error: any) {
+		if (error?.response?.status === 429) {
+			throw new RateLimitError();
+		}
 		return {
 			data: readFromCache('group_standings.json', MOCK_STANDINGS),
 			fromCache: true,
@@ -473,16 +449,12 @@ export async function getGroupStandings(): Promise<{
 export async function getMatchDetails(
 	id: string,
 ): Promise<{data: MatchEvent[]; fromCache: boolean}> {
-	if (!getApiKey() || id.includes('mock')) {
+	if (id.includes('mock')) {
 		return {data: MOCK_EVENTS[id] || [], fromCache: true};
 	}
 
 	try {
-		const response = await axios.get(`${API_BASE_URL}/fixtures/events`, {
-			headers: {
-				'x-rapidapi-key': getApiKey(),
-				'x-rapidapi-host': RAPIDAPI_HOST,
-			},
+		const response = await axios.get(`${getProxyUrl()}/fixtures/events`, {
 			params: {
 				fixture: id,
 			},
@@ -532,7 +504,10 @@ export async function getMatchDetails(
 		}
 
 		return {data: parsedData, fromCache: false};
-	} catch {
+	} catch (error: any) {
+		if (error?.response?.status === 429) {
+			throw new RateLimitError();
+		}
 		return {data: [], fromCache: true};
 	}
 }
@@ -540,16 +515,12 @@ export async function getMatchDetails(
 export async function getMatchStats(
 	id: string,
 ): Promise<{data: MatchStats | undefined; fromCache: boolean}> {
-	if (!getApiKey() || id.includes('mock')) {
+	if (id.includes('mock')) {
 		return {data: MOCK_STATS[id] || undefined, fromCache: true};
 	}
 
 	try {
-		const response = await axios.get(`${API_BASE_URL}/fixtures/statistics`, {
-			headers: {
-				'x-rapidapi-key': getApiKey(),
-				'x-rapidapi-host': RAPIDAPI_HOST,
-			},
+		const response = await axios.get(`${getProxyUrl()}/fixtures/statistics`, {
 			params: {
 				fixture: id,
 			},
@@ -604,7 +575,10 @@ export async function getMatchStats(
 		}
 
 		return {data: undefined, fromCache: true};
-	} catch {
+	} catch (error: any) {
+		if (error?.response?.status === 429) {
+			throw new RateLimitError();
+		}
 		return {data: undefined, fromCache: true};
 	}
 }

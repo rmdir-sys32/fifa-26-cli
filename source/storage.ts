@@ -6,8 +6,7 @@ import {existsSync} from 'node:fs';
 export const CONFIG_DIR =
 	os.platform() === 'win32'
 		? path.join(
-				process.env['APPDATA'] ||
-					path.join(os.homedir(), 'AppData', 'Roaming'),
+				process.env['APPDATA'] || path.join(os.homedir(), 'AppData', 'Roaming'),
 				'fifa-live-cli',
 		  )
 		: path.join(os.homedir(), '.config', 'fifa-live-cli');
@@ -44,11 +43,7 @@ export async function readConfig(): Promise<AppConfig> {
 export async function writeConfig(config: AppConfig): Promise<void> {
 	try {
 		await fs.mkdir(CONFIG_DIR, {recursive: true});
-		await fs.writeFile(
-			CONFIG_FILE,
-			JSON.stringify(config, null, 2),
-			'utf-8',
-		);
+		await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
 	} catch {
 		// Silent recovery
 	}
