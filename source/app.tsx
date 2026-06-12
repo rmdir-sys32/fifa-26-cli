@@ -490,7 +490,7 @@ export default function App({dryRun = false}: {dryRun?: boolean}) {
 							</Text>
 						</Box>
 					) : (
-						appData.matches.map(match => {
+						appData.matches.slice(0, 2).map(match => {
 							const events = appData.matchEventsMap[match.id] ?? [];
 							const goals = events.filter(ev =>
 								['GOAL', 'OWN_GOAL', 'PENALTY'].includes(ev.eventType),

@@ -1,7 +1,10 @@
 {
-	"name": "fifa-26-live-cli",
+	"name": "@m-tabish/fifa-26-live-cli",
 	"version": "1.0.0",
 	"description": "A live terminal dashboard for the FIFA 2026 World Cup",
+	"publishConfig": {
+		"access": "public"
+	},
 	"license": "MIT",
 	"bin": {
 		"fifa-26": "dist/cli.js"
